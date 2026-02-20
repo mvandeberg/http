@@ -41,12 +41,12 @@
 #include <boost/system/error_code.hpp>
 #include <boost/system/is_error_code_enum.hpp>
 
-#include <boost/capy/coro.hpp>
 #include <boost/capy/task.hpp>
-#include <boost/capy/ex/executor_ref.hpp>
+#include <boost/capy/ex/io_env.hpp>
 #include <boost/capy/ex/run_async.hpp>
 #include <boost/capy/ex/system_context.hpp>
 
+#include <coroutine>
 #include <cstddef>
 #include <cstring>
 #include <exception>
@@ -532,10 +532,10 @@ struct hash_async_op
     }
 
     void await_suspend(
-        capy::coro cont,
-        capy::executor_ref caller_ex,
-        std::stop_token)
+        std::coroutine_handle<> cont,
+        capy::io_env const* env)
     {
+        auto caller_ex = env->executor;
         auto& pool = capy::get_system_context();
         auto sys_ex = pool.get_executor();
         capy::run_async(sys_ex,
@@ -575,10 +575,10 @@ struct compare_async_op
     }
 
     void await_suspend(
-        capy::coro cont,
-        capy::executor_ref caller_ex,
-        std::stop_token)
+        std::coroutine_handle<> cont,
+        capy::io_env const* env)
     {
+        auto caller_ex = env->executor;
         auto& pool = capy::get_system_context();
         auto sys_ex = pool.get_executor();
         capy::run_async(sys_ex,
