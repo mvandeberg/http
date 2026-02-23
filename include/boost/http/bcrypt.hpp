@@ -543,13 +543,13 @@ struct hash_async_op
             (result r) mutable
             {
                 result_ = r;
-                caller_ex.dispatch(cont);
+                caller_ex.dispatch(cont).resume();
             },
             [this, cont, caller_ex]
             (std::exception_ptr ep) mutable
             {
                 ep_ = ep;
-                caller_ex.dispatch(cont);
+                caller_ex.dispatch(cont).resume();
             }
         )(hash_task(password_, rounds_, ver_));
     }
@@ -586,13 +586,13 @@ struct compare_async_op
             (bool ok) mutable
             {
                 result_ = ok;
-                caller_ex.dispatch(cont);
+                caller_ex.dispatch(cont).resume();
             },
             [this, cont, caller_ex]
             (std::exception_ptr ep) mutable
             {
                 ep_ = ep;
-                caller_ex.dispatch(cont);
+                caller_ex.dispatch(cont).resume();
             }
         )(compare_task(password_, hash_str_));
     }
