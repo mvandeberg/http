@@ -15,7 +15,6 @@
 #include <boost/capy/buffers/buffer_copy.hpp>
 #include <boost/capy/buffers/make_buffer.hpp>
 #include <boost/capy/buffers/buffer_slice.hpp>
-#include <boost/capy/buffers/string_dynamic_buffer.hpp>
 #include <boost/capy/concept/buffer_sink.hpp>
 #include <boost/capy/io/any_buffer_sink.hpp>
 #include <boost/capy/test/fuse.hpp>
@@ -68,7 +67,7 @@ struct serializer_test
         // serializer::consume(), allowing tests to cover
         // state management within these functions
         std::string s;
-        for( auto buf : cbs.data())
+        for( auto buf : cbs)
         {
             s.append(
                 reinterpret_cast<char const*>(buf.data()),
@@ -173,7 +172,6 @@ struct serializer_test
         // serializer(serializer&&)
         {
             std::string message;
-            capy::string_dynamic_buffer buf(&message);
             serializer sr1(cfg_);
             sr1.set_message(res);
             sr1.start();
@@ -181,22 +179,26 @@ struct serializer_test
             // consume 5 bytes
             {
                 auto cbs = sr1.prepare().value();
-                auto n = capy::buffer_copy(buf.prepare(5), cbs);
+                char tmp[5];
+                auto n = capy::buffer_copy(
+                    capy::mutable_buffer(tmp, sizeof(tmp)), cbs);
+                message.append(tmp, n);
                 sr1.consume(n);
-                buf.commit(n);
                 BOOST_TEST_EQ(n, 5);
             }
 
             serializer sr2(std::move(sr1));
 
-            // consume the reset from sr2
+            // consume the rest from sr2
             {
                 auto cbs = sr2.prepare().value();
-                auto n = capy::buffer_copy(
-                    buf.prepare(capy::buffer_size(cbs)),
-                    cbs);
-                sr2.consume(n);
-                buf.commit(n);
+                for( auto buf : cbs )
+                {
+                    message.append(
+                        reinterpret_cast<char const*>(buf.data()),
+                        buf.size());
+                    sr2.consume(buf.size());
+                }
             }
 
             BOOST_TEST(sr2.is_done());
